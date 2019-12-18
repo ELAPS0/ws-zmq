@@ -16,6 +16,7 @@ Brief description
  4. Backend server process events and publishes result for web-server.
  5. Web-server sends result to all users via websockets.
  
+Single backend serves many web-servers, single web-server serves many web-clients.
   
 Requires pyhton3.7 or higher.
 
