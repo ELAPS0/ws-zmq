@@ -35,10 +35,6 @@ async def transmitte():
             await pub.send_multipart([b'new.event']+ msg)
             print('transmitted')
 
-
-
-
-
 asyncio.get_event_loop().run_until_complete(asyncio.wait([
     transmitte(),
 ]))
