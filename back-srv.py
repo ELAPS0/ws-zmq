@@ -8,8 +8,9 @@ import zmq
 from zmq.asyncio import Context, Poller
 import asyncio
 
-pull_url = 'tcp://127.0.0.1:3552'
-pub_url = 'tcp://127.0.0.1:5554'
+pull_url    = 'tcp://127.0.0.1:3552'
+pub_url     = 'tcp://127.0.0.1:5554'
+rep_url     = 'tcp://127.0.0.1:5555'
 
 ctx = Context.instance()
 def msg_proc(msg):
@@ -20,8 +21,22 @@ def msg_proc(msg):
     '''
     return [b'new event', msg[0]+b' processed']
 
-async def transmitte():
-    """receive messages with polling"""
+async def request_handler():
+    '''
+    client single request handler
+    '''
+    rep = ctx.socket(zmq.REP)
+    rep.connect(rep_url)
+    msg = await rep.recv()
+    print ('got request {}'.format(msg))
+    await rep.send('done') 
+
+async def events_handler():
+    '''
+    client events handler
+    receive from web server, icall processor and transmit result  back as event  
+    '''
+
     pull = ctx.socket(zmq.PULL)
     pull.connect(pull_url)
     poller = Poller()
@@ -38,5 +53,7 @@ async def transmitte():
             print('recvd {}, transmetted'.format(msg))
 
 asyncio.get_event_loop().run_until_complete(asyncio.wait([
-    transmitte(),
+    events_handler(),
+    request_handler()
 ]))
+
