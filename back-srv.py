@@ -8,7 +8,7 @@ import zmq
 from zmq.asyncio import Context, Poller
 import asyncio
 
-pull_url    = 'tcp://127.0.0.1:3552'
+pull_url    = 'tcp://127.0.0.1:5552'
 pub_url     = 'tcp://127.0.0.1:5554'
 rep_url     = 'tcp://127.0.0.1:5555'
 
@@ -19,7 +19,10 @@ def msg_proc(msg):
     @msg    - zmq message (list of binary string (utf-8))
     @return   - list [topic, response_message]
     '''
-    return [b'new event', msg[0]+b' processed']
+    if msg[1] == b'init me':
+        return [msg[0], msg[1]+b' processed']
+    
+    return [b'broadcast', msg[1]+b' processed']
 
 async def request_handler():
     '''
@@ -49,8 +52,11 @@ async def events_handler():
         events = await poller.poll()
         if pull in dict(events):
             msg = await pull.recv_multipart()
-            await pub.send_multipart(msg_proc( msg))
-            print('recvd {}, transmetted'.format(msg))
+            print (msg)
+            reply = msg_proc( msg)
+            print (reply)
+            await pub.send_multipart(reply)
+            print('{}, transmetted'.format(reply))
 
 asyncio.get_event_loop().run_until_complete(asyncio.wait([
     events_handler(),

@@ -14,7 +14,7 @@ from zmq.asyncio import Context
 WS_FILE = os.path.join(os.path.dirname(__file__), 'websocket.html')
 
 sub_endpoint = 'tcp://127.0.0.1:5554'
-push_endpoint = 'tcp://127.0.0.1:3552'
+push_endpoint = 'tcp://127.0.0.1:5552'
 
 ctx = Context.instance()
 
@@ -27,7 +27,7 @@ class BusConnector:
         try:
             self.sub = ctx.socket(zmq.SUB)
             self.push = ctx.socket(zmq.PUSH)
-            self.sub.setsockopt(zmq.SUBSCRIBE,topics)
+            self.sub.setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
             self.sub.connect(sub_endpoint)
             self.push.bind(push_endpoint)
     
@@ -38,13 +38,17 @@ class BusConnector:
             print (traceback.format_exc())
             print()
 
-    async def send_event(self, msg):
+    def add_topic(self, topic):
+        self.sub.setsockopt(zmq.SUBSCRIBE,topic.encode('utf-8'))
+
+    async def send_event(self, sender_id: str, msg:str):
         '''
         send event to zmq bus
+        @sender_id  - websocket identity 
         @msg        - json message  type str
         '''
         print ('message {} is sending...'.format(msg))
-        await self.push.send_multipart([msg.encode('utf-8')])
+        await self.push.send_multipart([sender_id.encode('utf-8'), msg.encode('utf-8')])
 
     async def get_events(self, app ):
         '''
@@ -57,7 +61,8 @@ class BusConnector:
                 [topic, msg] = await self.sub.recv_multipart()
                 print('   Topic: %s, msg:%s' % (topic, msg))
                 for ws in app['sockets']:
-                    await ws.send_str(str(msg))
+                    if topic == b'broadcast' or topic == str(id(ws)).encode('utf-8'):
+                        await ws.send_str(str(msg))
 
         except Exception as e:
             print("Error with sub world")
@@ -78,9 +83,11 @@ async def wshandler(request):
     if not available:
         with open(WS_FILE, 'rb') as fp:
             return web.Response(body=fp.read(), content_type='text/html')
+    
+    request.app['bus'].add_topic(str(id(resp)))
+    await request.app['bus'].send_event(str(id(resp)), 'init me')
 
     await resp.prepare(request)
-
     await resp.send_str('Welcome!!!')
 
     try:
@@ -96,7 +103,7 @@ async def wshandler(request):
                     if ws is not resp:
                         await ws.send_str(msg.data)
                 '''
-                await request.app['bus'].send_event(msg.data)
+                await request.app['bus'].send_event('', msg.data)
             else:
                 return resp
         return resp
@@ -126,7 +133,7 @@ async def on_shutdown(app):
 def init():
     app = web.Application()
     app['sockets'] = []
-    app['bus'] = BusConnector()
+    app['bus'] = BusConnector('broadcast')
     app.router.add_get('/', wshandler)
    
 
