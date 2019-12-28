@@ -6,8 +6,8 @@
   body {background-color: black}
   body {color: Lime}
 </style> 
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js">
-</script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script src="https://daruse.ru/assets/js/snowfall.js"></script>
   <script language="javascript" type="text/javascript">
     $(function() {
       var conn = null;
@@ -24,6 +24,7 @@
         conn.onopen = function() {
           log('Connected.');
           update_ui();
+   	$(document).snowfall();
         };
         conn.onmessage = function(e) {
           log('Received: ' + e.data);
