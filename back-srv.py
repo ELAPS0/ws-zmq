@@ -1,3 +1,5 @@
+#!env/bin/python
+
 """Example using zmq with asyncio coroutines"""
 # Copyright (c) PyZMQ Developers.
 # This example is in the public domain (CC-0)
@@ -58,8 +60,8 @@ async def events_handler():
             await pub.send_multipart(reply)
             print('{}, transmetted'.format(reply))
 
+print ('up and running...')
 asyncio.get_event_loop().run_until_complete(asyncio.wait([
     events_handler(),
     request_handler()
 ]))
-

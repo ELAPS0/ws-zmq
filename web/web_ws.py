@@ -135,6 +135,8 @@ def init():
     app['sockets'] = []
     app['bus'] = BusConnector('broadcast')
     app.router.add_get('/', wshandler)
+    #app.router.add_get([web.static('/static', 'static')])
+    app.add_routes    ([web.static('/static', 'static')])
    
 
     app.on_startup.append(start_background_tasks)
