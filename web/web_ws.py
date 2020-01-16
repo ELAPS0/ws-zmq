@@ -10,11 +10,12 @@ from aiohttp import web
 import logging
 import zmq
 from zmq.asyncio import Context
+import conf
 
 WS_FILE = os.path.join(os.path.dirname(__file__), 'websocket.html')
 
-sub_endpoint = 'tcp://127.0.0.1:5554'
-push_endpoint = 'tcp://127.0.0.1:5552'
+sub_endpoint = 'tcp://127.0.0.1:6550'
+push_endpoint = 'tcp://127.0.0.1:5550'
 
 ctx = Context.instance()
 
@@ -24,12 +25,20 @@ class BusConnector:
         ZMQ publish and subscribe sockets & utils
         @topics     - binary string representation (utf-8) list of subscription topics
         '''
+        #subscription sockets
+        self.subs = [];
+        #push sockets
+        self.pushs = [];
+
         try:
-            self.sub = ctx.socket(zmq.SUB)
-            self.push = ctx.socket(zmq.PUSH)
-            self.sub.setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
-            self.sub.connect(sub_endpoint)
-            self.push.bind(push_endpoint)
+            for ep in conf.sub_endpoints:
+                self.subs.append(ctx.socket(zmq.SUB))
+                self.subs[-1].setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
+                self.subs[-1].connect(ep)
+
+            for ep in conf.push_endpoints:
+                self.pushs.append(ctx.socket(zmq.PUSH))
+                self.pushs[-1].bind(ep)
     
         except Exception as e:
             print("Error with sub world")
@@ -39,7 +48,8 @@ class BusConnector:
             print()
 
     def add_topic(self, topic):
-        self.sub.setsockopt(zmq.SUBSCRIBE,topic.encode('utf-8'))
+        for s in self.subs:
+            s.setsockopt(zmq.SUBSCRIBE,topic.encode('utf-8'))
 
     async def send_event(self, sender_id: str, msg:str):
         '''
@@ -48,7 +58,8 @@ class BusConnector:
         @msg        - json message  type str
         '''
         print ('message {} is sending...'.format(msg))
-        await self.push.send_multipart([sender_id.encode('utf-8'), msg.encode('utf-8')])
+        for s in self.pushs:
+            await s.send_multipart([sender_id.encode('utf-8'), msg.encode('utf-8')])
 
     async def get_events(self, app ):
         '''
@@ -58,11 +69,12 @@ class BusConnector:
         try:
             print("Receiving messages from {}...".format(sub_endpoint))
             while True:
-                [topic, msg] = await self.sub.recv_multipart()
-                print('   Topic: %s, msg:%s' % (topic, msg))
-                for ws in app['sockets']:
-                    if topic == b'broadcast' or topic == str(id(ws)).encode('utf-8'):
-                        await ws.send_str(str(msg))
+                for s in self.subs:
+                    [topic, msg] = await s.recv_multipart()
+                    print('   Topic: %s, msg:%s' % (topic, msg))
+                    for ws in app['sockets']:
+                        if topic == b'broadcast' or topic == str(id(ws)).encode('utf-8'):
+                            await ws.send_str(str(msg))
 
         except Exception as e:
             print("Error with sub world")
