@@ -73,7 +73,8 @@ class BusConnector:
                     [topic, msg] = await s.recv_multipart()
                     print('   Topic: %s, msg:%s' % (topic, msg))
                     for ws in app['sockets']:
-                        if topic == b'broadcast' or topic == str(id(ws)).encode('utf-8'):
+                        if topic == b'broadcast' or topic == b'perf' or \
+                                  topic == str(id(ws)).encode('utf-8'):
                             await ws.send_str(str(msg))
 
         except Exception as e:
@@ -145,7 +146,7 @@ async def on_shutdown(app):
 def init():
     app = web.Application()
     app['sockets'] = []
-    app['bus'] = BusConnector('broadcast')
+    app['bus'] = BusConnector('')
     app.router.add_get('/', wshandler)
     #app.router.add_get([web.static('/static', 'static')])
     app.add_routes    ([web.static('/static', 'static')])

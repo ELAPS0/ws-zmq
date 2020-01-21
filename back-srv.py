@@ -12,7 +12,6 @@ from zmq.asyncio import Context, Poller
 import asyncio
 import aux
 
-#rep_url     = 'tcp://127.0.0.1:5555'
 
 ctx = Context.instance()
 def msg_proc(msg):
@@ -50,7 +49,7 @@ async def events_handler():
 
     pub = ctx.socket(zmq.PUB)
     pub.connect(pub_url)
-
+    print(f'publisher url {pub_url}')
     while True:
         events = await poller.poll()
         if pull in dict(events):
@@ -66,8 +65,6 @@ print ('up and running...')
 aux.import_from_file(sys.argv[1]+'.py',sys.argv[1])
 
 
-#pull_url    = 'tcp://127.0.0.1:5552'
-#pub_url     = 'tcp://127.0.0.1:5554'
 
 pull_url    =  sys.modules[sys.argv[1]].pull_url
 pub_url    =  sys.modules[sys.argv[1]].pub_url
