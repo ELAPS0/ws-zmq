@@ -34,7 +34,7 @@ class BusConnector:
             for ep in conf.sub_endpoints:
                 self.subs.append(ctx.socket(zmq.SUB))
                 self.subs[-1].setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
-                self.subs[-1].connect(ep)
+                self.subs[-1].bind(ep)
 
             for ep in conf.push_endpoints:
                 self.pushs.append(ctx.socket(zmq.PUSH))

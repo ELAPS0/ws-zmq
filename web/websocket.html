@@ -11,12 +11,18 @@
 <script src="static/js/3dparty/jquery.min.js"></script>
 <script src="static/js/3dparty/snowfall.js"></script>
   <script language="javascript" type="text/javascript">
+    var cntr = 0;
+    var t0 = Date.now();
     $(function() {
       var conn = null;
       function log(msg) {
         var control = $('#log');
         control.html(control.html() + msg + '<br/>');
         control.scrollTop(control.scrollTop() + 1000);
+      }
+      function show_perf(msg) {
+        var control = $('#perf');
+        control.html(msg);
       }
       function connect() {
         disconnect();
@@ -26,10 +32,21 @@
         conn.onopen = function() {
           log('Connected.');
           update_ui();
-   	$(document).snowfall();
+   	      $(document).snowfall();
         };
         conn.onmessage = function(e) {
-          log('Received: ' + e.data);
+          if (e.data.startsWith('b\'perf start')){
+            cntr = 1;
+            t0 = Date.now();
+            show_perf('in progress... ');
+          }else if(e.data.startsWith('b\'perf stop')){
+            var t = (Date.now()-t0)/1000;
+            show_perf('Perf: ' + cntr/t + ' events per sec');
+            cntr = 0;
+          }else if (cntr > 0){
+              cntr = cntr + 1;
+          }else
+            log('Received: ' + e.data);
         };
         conn.onclose = function() {
           log('Disconnected.');
@@ -87,6 +104,9 @@
 </div>
 <div id="log"
      style="width:20em;height:15em;overflow:auto;border:1px solid black">
+</div>
+<div id="perf"
+     style="width:20em;height:1em;overflow:auto;border:3px solid blue">
 </div>
 <form id="chatform" onsubmit="return false;">
   <input id="text" type="text" />

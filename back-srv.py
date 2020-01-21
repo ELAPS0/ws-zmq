@@ -49,7 +49,7 @@ async def events_handler():
     poller.register(pull, zmq.POLLIN)
 
     pub = ctx.socket(zmq.PUB)
-    pub.bind(pub_url)
+    pub.connect(pub_url)
 
     while True:
         events = await poller.poll()
