@@ -68,14 +68,22 @@ class BusConnector:
         '''
         try:
             print("Receiving messages from {}...".format(sub_endpoint))
+            perf_cntr = 0
+            perf_t0   = time.time()
             while True:
                 for s in self.subs:
                     [topic, msg] = await s.recv_multipart()
-                    print('   Topic: %s, msg:%s' % (topic, msg))
-                    for ws in app['sockets']:
-                        if topic == b'broadcast' or topic == b'perf' or \
-                                  topic == str(id(ws)).encode('utf-8'):
-                            await ws.send_str(str(msg))
+                    if topic == b'perf_int':
+                        if msg == b'perf start':
+                            perf_cntr = 1
+
+
+                    else:
+                        print('   Topic: %s, msg:%s' % (topic, msg))
+                        for ws in app['sockets']:
+                            if topic == b'broadcast' or topic == b'perf' or \
+                                      topic == str(id(ws)).encode('utf-8'):
+                                await ws.send_str(str(msg))
 
         except Exception as e:
             print("Error with sub world")
