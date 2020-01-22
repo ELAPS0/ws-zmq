@@ -19,7 +19,7 @@ WS_FILE = os.path.join(os.path.dirname(__file__), 'websocket.html')
 ctx = Context.instance()
 
 class BusConnector:
-    def __init__(self, topics = b''):
+    def __init__(self, topics = ''):
         '''
         ZMQ publish and subscribe sockets & utils
         @topics     - binary string representation (utf-8) list of subscription topics
