@@ -169,5 +169,5 @@ def init():
     app.on_shutdown.append(on_shutdown)
     return app
 
-web.run_app(init())
+web.run_app(init(), port=conf.http_port)
 
