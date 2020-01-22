@@ -4,6 +4,7 @@
 
 import os
 import traceback
+from time import time 
 
 from aiohttp import web
 
@@ -14,8 +15,6 @@ import conf
 
 WS_FILE = os.path.join(os.path.dirname(__file__), 'websocket.html')
 
-sub_endpoint = 'tcp://127.0.0.1:6550'
-push_endpoint = 'tcp://127.0.0.1:5550'
 
 ctx = Context.instance()
 
@@ -66,18 +65,23 @@ class BusConnector:
         subscribe to zmq and get events
         @app      - main web application
         '''
+
         try:
-            print("Receiving messages from {}...".format(sub_endpoint))
+            print("Receiving messages from {}...".format(conf.sub_endpoints))
             perf_cntr = 0
-            perf_t0   = time.time()
+            perf_t0   = time()
             while True:
                 for s in self.subs:
                     [topic, msg] = await s.recv_multipart()
                     if topic == b'perf_int':
                         if msg == b'perf start':
                             perf_cntr = 1
-
-
+                            perf_t0 = time()
+                            print ('perf start')
+                        elif msg == b'perf stop':
+                            print (f'speed {perf_cntr/(time()-perf_t0)} evens per second')
+                        else:
+                            perf_cntr = perf_cntr + 1
                     else:
                         print('   Topic: %s, msg:%s' % (topic, msg))
                         for ws in app['sockets']:

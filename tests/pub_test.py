@@ -11,7 +11,7 @@ from zmq.asyncio import Context, Poller
 import asyncio
 import aux
 
-
+topic = b'perf_int'
 
 async def events_publish(cn, payload):
     '''
@@ -28,14 +28,14 @@ async def events_publish(cn, payload):
     time.sleep(1)
 
     print('start perfomance measureing...')
-    evnt = [b'perf', b'perf start1']
+    evnt = [topic, b'perf start']
     await pub.send_multipart(evnt)
     while cn:
         cn = cn - 1
-        evnt = [b'perf', payload]
+        evnt = [topic, payload]
         await pub.send_multipart(evnt)
 
-    evnt = [b'perf', b'perf stop']
+    evnt = [topic, b'perf stop']
     await pub.send_multipart(evnt)
     print('stop perfomance measureing...')
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
         cn = int(sys.argv[2])
         pl_size = int(sys.argv[3])
-        payload = bytes([0xa5] * pl_size)
+        payload = bytes([0xf5] * pl_size)
         asyncio.get_event_loop().run_until_complete(asyncio.wait([
             events_publish(cn, payload)
         ]))
