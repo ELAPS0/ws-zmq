@@ -24,31 +24,26 @@ class BusConnector:
         ZMQ publish and subscribe sockets & utils
         @topics     - binary string representation (utf-8) list of subscription topics
         '''
-        #subscription sockets
-        self.subs = [];
-        #push sockets
-        self.pushs = [];
 
         try:
-            for ep in conf.sub_endpoints:
-                self.subs.append(ctx.socket(zmq.SUB))
-                self.subs[-1].setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
-                self.subs[-1].bind(ep)
+            #input subscription socket
+            self.sub = ctx.socket(zmq.SUB)
+            self.sub.setsockopt(zmq.SUBSCRIBE,topics.encode('utf-8'))
+            self.sub.bind(conf.sub_endpoint)
 
-            for ep in conf.push_endpoints:
-                self.pushs.append(ctx.socket(zmq.PUSH))
-                self.pushs[-1].bind(ep)
+            #output publishing socket
+            self.pub = ctx.socket(zmq.PUB)
+            self.pub.bind(conf.pub_endpoint)
     
         except Exception as e:
-            print("Error with sub world")
+            print("Error with zmq world")
             print(e)
             logging.error(traceback.format_exc())
             print (traceback.format_exc())
             print()
 
     def add_topic(self, topic):
-        for s in self.subs:
-            s.setsockopt(zmq.SUBSCRIBE,topic.encode('utf-8'))
+        self.sub.setsockopt(zmq.SUBSCRIBE,topic.encode('utf-8'))
 
     async def send_event(self, sender_id: str, msg:str):
         '''
@@ -57,8 +52,7 @@ class BusConnector:
         @msg        - json message  type str
         '''
         print ('message {} is sending...'.format(msg))
-        for s in self.pushs:
-            await s.send_multipart([sender_id.encode('utf-8'), msg.encode('utf-8')])
+        await self.pub.send_multipart([sender_id.encode('utf-8'), msg.encode('utf-8')])
 
     async def get_events(self, app ):
         '''
@@ -67,12 +61,11 @@ class BusConnector:
         '''
 
         try:
-            print("Receiving messages from {}...".format(conf.sub_endpoints))
+            print("Receiving messages from {}...".format(conf.sub_endpoint))
             perf_cntr = 0
             perf_t0   = time()
             while True:
-                for s in self.subs:
-                    [topic, msg] = await s.recv_multipart()
+                    [topic, msg] = await self.sub.recv_multipart()
                     if topic == b'perf_int':
                         if msg == b'perf start':
                             perf_cntr = 1
@@ -160,7 +153,6 @@ def init():
     app['sockets'] = []
     app['bus'] = BusConnector('')
     app.router.add_get('/', wshandler)
-    #app.router.add_get([web.static('/static', 'static')])
     app.add_routes    ([web.static('/static', 'static')])
    
 
